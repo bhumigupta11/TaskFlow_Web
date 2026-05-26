@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: team-task-manager-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - team-task-manager
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: team-task-manager-backend
+    environment:
+      PORT: 5000
+      MONGO_URI: mongodb://admin:password@mongodb:27017/team-task-manager?authSource=admin
+      JWT_SECRET: docker_development_secret
+      JWT_EXPIRE: 7d
+      NODE_ENV: development
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    networks:
+      - team-task-manager
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: team-task-manager-frontend
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - team-task-manager
+
+volumes:
+  mongodb_data:
+
+networks:
+  team-task-manager:
+    driver: bridge
